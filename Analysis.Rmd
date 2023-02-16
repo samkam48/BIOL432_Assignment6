@@ -1,0 +1,99 @@
+---
+title: "Analysis"
+author: "Sam Kam"
+date: "2023-02-13"
+output: html_document
+---
+# Sequencing and Alignments
+
+[GitHub Repository](https://github.com/samkam48/Rentrez)
+
+## Part 1 
+
+**Import the Sequences.csv file**
+```{r}
+Sequences <- read.csv("Sequences.csv", header=T)
+
+str(Sequences)
+nrow(Sequences)
+ncol(Sequences)
+```
+
+**Count the number of each base pair (A, T, C and G), in each of the three sequences. (Hint: do not include any characters from the header, use the nucleotide sequence only; you MIGHT use gsub(), nchar(), for loops, if/then statements). Print out each sequence.**
+```{r}
+for(i in 1:nrow(Sequences)){
+  seq <- Sequences$Sequence[i]
+  Adenine <- nchar(gsub("[^A]", "", seq)) #count number of ATCGs in each row
+  Thymine <- nchar(gsub("[^T]", "", seq))
+  Cytosine <- nchar(gsub("[^C]", "", seq))
+  Guanine <- nchar(gsub("[^G]", "", seq))
+  cat(sprintf("%s: \n", Sequences$Name[i])) #print results w/ corresponding name
+  cat(sprintf("A: %d\n", Adenine))
+  cat(sprintf("T: %d\n", Thymine))
+  cat(sprintf("C: %d\n", Cytosine))
+  cat(sprintf("G: %d\n", Guanine))
+  cat("\n")
+}
+
+#does this count as a table???
+```
+
+**Include an image of a bacteria from the internet, and a link to the Wikipedia page about Borrelia burgdorferi**
+
+[Borrelia burgdorferi](https://en.wikipedia.org/wiki/Borrelia_burgdorferi)
+
+```{r}
+knitr::include_graphics("Borrelia_burgdorferi.jpg")
+```
+
+**Calculate GC Content (% of nucleotides that are G or C) and create a final table showing GC content for each sequence ID**
+```{r}
+NucleotidePercentList <- list()
+
+for(i in 1:nrow(Sequences)) {
+  seq <- Sequences$Sequence[i]
+  gcTotal <- sum(strsplit(seq, "")[[1]] %in% c("G", "C"))
+  TotalNucleotide <- nchar(seq)
+  gcPercent <- gcTotal/TotalNucleotide * 100
+  NucleotidePercentList[[Sequences$Name[i]]] <- gcPercent
+}
+
+print(NucleotidePercentList)
+
+#Create table based on list (this is probs wrong, but I couldn't figure out how to use the list as part of my table code)
+gcTable <- data.frame(
+  Sequence_ID = c("HQ433692.1", "HQ433694.1", "HQ433691.1"),
+  GC_Content = c("44.3%", "44.1%", "44.1%"))
+print(gcTable)
+```
+
+## Part 2
+**Write reproducible R code to search for the closest matching sequence on Genbank and generate an alignment to confirm the degree of similarity**
+```{r}
+#load libraries
+library(rentrez)
+library(annotate)
+library(Biostrings)
+library(seqinr)
+
+#blast search for unknown sequence
+BlastSearch <- blastSequences(paste(OddSeq), hitListSize = 10, as = 'data.frame')
+
+nrow(BlastSearch)
+summary(BlastSearch)
+head(BlastSearch)
+
+#investigate BLAST columns
+BlastSearch$Hsp_score #strength of match
+BlastSearch$Hsp_evalue #strength of hit
+```
+
+**Determine if it is human or another organism. Explain to the clinician whether this is something to be concerned about, using graphics with text to explain your analysis**
+
+The DNA is most likely not human. The closest matching sequence found was Yersinia pestis, which is a gram-negative bacteria that causes plague. Transmission is usually through being bit by a rodent flea carrying the bacteria, or handling an animal infected with the plague. This is definitely concerning since the plague previously killed millions of people in Europe during the Middle Ages. While antibiotics are effective in treating the plague today, it is still important to get ahead as the disease is lethal. 
+
+```{r}
+knitr::include_graphics("Yersinia_pestis.jpg")
+```
+
+Figure 1: Yersinia scanned with electron micrograph
